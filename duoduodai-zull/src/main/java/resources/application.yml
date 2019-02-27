@@ -1,0 +1,45 @@
+server:
+  port: 10010 #服务端口
+spring: 
+  application:  
+    name: api-gateway #指定服务名
+    
+eureka:
+  client:
+    #因为是客户端，默认可以不配，所以以下就注释掉了
+    #register-with-eureka: true #是否将自己注册到eureka服务中,默认为true
+    #fetch-registry: true #是否从eureka服务中拉取其它服务的信息 ,默认为true
+    
+    service-url: #Eureka客户端与Eureka服务端交互地址
+       defaultZone:  http://127.0.0.1:10086/eureka,http://127.0.0.1:10087/eureka #Eureka注册中心的地址
+    registry-fetch-interval-seconds: 5 #每隔5秒从EurekaServer获取新的服务列表，默认为30秒
+  instance:
+    prefer-ip-address: true #当你获取host时，返回的是ip,而不是主机名
+    ip-address: 127.0.0.1 # 指定自己的ip信息，不指定的话会自己寻找
+    instance-id: ${spring.application.name}:${server.port} #指定实例Id，一个服务下面可以有多个实例，即eureka服务可以有集群
+
+zuul:  
+  prefix: /api # 添加路由前缀，目的把服务间内部调用、其它外部调用，区分开
+# routes: 直接不用配，它会自动把服务名作为映射路径
+# spring-cloud-order: /spring-cloud-order/** # 服务名：spring-cloud-order，映射路径：/spring-cloud-order/**
+  retryable: true  #开启重试机制
+
+ribbon:
+  NFLoadBalancerRuleClassName: com.netflix.loadbalancer.RoundRobinRule  #负载均衡策略
+      
+  #重试机制相关配置
+  ConnectTimeout: 250 # Ribbon的连接超时时间，超过这个时间就认为这个服务不可用了，重试下一个
+  ReadTimeout: 5000 # Ribbon的数据读取超时时间，读取超时后重试下一个
+  OkToRetryOnAllOperations: true # 是否对所有操作都进行重试
+  MaxAutoRetriesNextServer: 2 # 切换实例的重试次数，这个联不通，我切下一个，如果还不通，就不会再切了，不能一直切，
+                              # 浏览器等不及，客户也等不及,所以这里设置只重试一次
+  MaxAutoRetries: 1 # 对当前实例的重试次数，如果当前服务挂了，要不要在当前服务上也重试一下
+  
+#熔断超时时间设置  
+hystrix: 
+  command:
+      default:
+        execution:
+          isolation:
+            thread:
+              timeoutInMillisecond: 60000  # 设置hystrix的超时时间为6000ms，默认为1s
